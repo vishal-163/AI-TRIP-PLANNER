@@ -6,20 +6,21 @@ import '../models/itinerary_model.dart';
 import '../models/trip_input_model.dart';
 
 class GeminiService {
-  static String get apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+  // Fallback in case dotenv fails to load from asset bundle
+  static const String _fallbackApiKey = 'AIzaSyAcx9MepqrdoWIbi-9aSDVEbsTW6F6j1Mk';
   
+  static String get apiKey {
+    final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    return envKey.isNotEmpty ? envKey : _fallbackApiKey;
+  }
 
   static const List<String> _modelsToTry = [
-    'gemini-2.0-flash', 
-    'gemini-2.0-flash-lite',     
-    'gemini-flash-latest',  
-    'gemini-2.5-flash',      
+    'gemini-2.5-flash',
+    'gemini-2.0-flash-lite',
   ];
 
   static Future<ItineraryModel> generateItinerary(TripInputModel tripInput) async {
-    if (apiKey.isEmpty) {
-      throw Exception('GEMINI_API_KEY not found in environment variables');
-    }
+    print('Using API key: ${apiKey.substring(0, 10)}...');
 
     Exception? lastError;
 
@@ -28,9 +29,8 @@ class GeminiService {
         print('Attempting to generate itinerary using model: $modelName');
         return await _generateWithModel(tripInput, modelName);
       } catch (e) {
-        print('Model $modelName failed: $e');
+        print('Model $modelName failed with error: $e');
         lastError = e is Exception ? e : Exception(e.toString());
-        
       }
     }
 
@@ -144,7 +144,7 @@ CRITICAL REQUIREMENTS:
       ],
       'generationConfig': {
         'temperature': 0.5,
-        'maxOutputTokens': 8192,
+        'maxOutputTokens': 65536,
         'responseMimeType': 'application/json'
       }
     };
